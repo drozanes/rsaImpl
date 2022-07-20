@@ -30,70 +30,44 @@ namespace RsaImplementation
             return new RSAKey() { privateKey = privateKey, publicKey = publicKey };
         }
 
-        private BigInteger CalculateD(long e, BigInteger gama)
-        {
-            BigInteger u=e, v=gama;
-            BigInteger inv, u1, u3, v1, v3, t1, t3, q;
-            BigInteger iter;
-            /* Step X1. Initialise */
-            u1 = 1;
-            u3 = u;
-            v1 = 0;
-            v3 = v;
-            /* Remember odd/even iterations */
-            iter = 1;
-            /* Step X2. Loop while v3 != 0 */
-            while (v3 != 0)
-            {
-                /* Step X3. Divide and "Subtract" */
-                q = u3 / v3;
-                t3 = u3 % v3;
-                t1 = u1 + q * v1;
-                /* Swap */
-                u1 = v1; v1 = t1; u3 = v3; v3 = t3;
-                iter = -iter;
-            }
-            /* Make sure u3 = gcd(u,v) == 1 */
-            if (u3 != 1)
-                return 0;   /* Error: No inverse exists */
-            /* Ensure a positive result */
-            if (iter < 0)
-                inv = v - u1;
-            else
-                inv = u1;
-            return inv;
-        }
-
-
-        private void GeneratePrimeNumber(out BigInteger num)
-        {
-            num = 0;
-            while (IsPrime(num) == false ||
-                e >= (num - 1) ||
-                BigInteger.GreatestCommonDivisor(num - 1, e) != 1)   //while choosing number, we verify that num-1 is coprime to e
-            {
-                num = randomInRangeFromZeroToPositive(long.MaxValue);
-            }
-
-        }
-
         public BigInteger Encrypt(BigInteger p, RSAPublicKey publicKey)
         {
-            //byte[] bytes = Encoding.ASCII.GetBytes(p);
-            //BigInteger num = new BigInteger(bytes);
-            BigInteger c = BigInteger.ModPow(p, publicKey.e, publicKey.n);
-            return c;
-            //return Encoding.ASCII.GetString(c.ToByteArray());
+            return EncryptDecryptInternal(p, publicKey.e, publicKey.n);
+        }
+
+        private BigInteger EncryptDecryptInternal(BigInteger data, BigInteger exponent, BigInteger modolus)
+        {
+            int blockSize = 16;
+            byte[] plainBytes = data.ToByteArray();
+            List<byte[]> chiperBytesList = new List<byte[]>();
+            int numOfBlocks = plainBytes.Length % blockSize == 0 ? plainBytes.Length / blockSize : plainBytes.Length / blockSize + 1;
+            int numOfResBytes = 0;
+            for (int i = 0; i < numOfBlocks; i++)
+            {
+                BigInteger partP = new BigInteger(plainBytes.Skip(i * blockSize).Take(blockSize).ToArray());
+                byte[] partC = BigInteger.ModPow(partP, exponent, modolus).ToByteArray();
+                chiperBytesList.Add(partC);
+                numOfResBytes += partC.Length;
+            }
+
+            byte[] chiperBytes = new byte[numOfResBytes];
+            int offset = 0;
+            foreach (byte[] bytes in chiperBytesList)
+            {
+                Buffer.BlockCopy(bytes, 0, chiperBytes, offset, bytes.Length);
+                offset += bytes.Length;
+
+            }
+
+            BigInteger res = new BigInteger(chiperBytes);
+            return res;
+
         }
 
 
         public BigInteger Decrypt(BigInteger c, RSAPrivateKey privateKey)
         {
-            //byte[] bytes = Encoding.ASCII.GetBytes(c);
-            //BigInteger num = new BigInteger(bytes);
-            BigInteger p = BigInteger.ModPow(c, privateKey.d, privateKey.n);
-            return p;
-            //return Encoding.ASCII.GetString(p.ToByteArray());
+            return EncryptDecryptInternal(c, privateKey.d, privateKey.n);
         }
 
 
@@ -131,7 +105,52 @@ namespace RsaImplementation
             return true;
         }
 
-        public BigInteger RandomInRange(BigInteger min, BigInteger max)
+        private BigInteger CalculateD(long e, BigInteger gama)
+        {
+            BigInteger u = e, v = gama;
+            BigInteger inv, u1, u3, v1, v3, t1, t3, q;
+            BigInteger iter;
+            /* Step X1. Initialise */
+            u1 = 1;
+            u3 = u;
+            v1 = 0;
+            v3 = v;
+            /* Remember odd/even iterations */
+            iter = 1;
+            /* Step X2. Loop while v3 != 0 */
+            while (v3 != 0)
+            {
+                /* Step X3. Divide and "Subtract" */
+                q = u3 / v3;
+                t3 = u3 % v3;
+                t1 = u1 + q * v1;
+                /* Swap */
+                u1 = v1; v1 = t1; u3 = v3; v3 = t3;
+                iter = -iter;
+            }
+            /* Make sure u3 = gcd(u,v) == 1 */
+            if (u3 != 1)
+                return 0;   /* Error: No inverse exists */
+            /* Ensure a positive result */
+            if (iter < 0)
+                inv = v - u1;
+            else
+                inv = u1;
+            return inv;
+        }
+
+        private void GeneratePrimeNumber(out BigInteger num)
+        {
+            num = 0;
+            while (IsPrime(num) == false ||
+                e >= (num - 1) ||
+                BigInteger.GreatestCommonDivisor(num - 1, e) != 1)   //while choosing number, we verify that num-1 is coprime to e
+            {
+                num = RandomInRangeFromZeroToPositive(long.MaxValue);
+            }
+        }
+
+        private BigInteger RandomInRange(BigInteger min, BigInteger max)
         {
             if (min > max)
             {
@@ -145,11 +164,11 @@ namespace RsaImplementation
             min = 0;
             max += offset;
 
-            var value = randomInRangeFromZeroToPositive(max) - offset;
+            var value = RandomInRangeFromZeroToPositive(max) - offset;
             return value;
         }
 
-        private BigInteger randomInRangeFromZeroToPositive(BigInteger max)
+        private BigInteger RandomInRangeFromZeroToPositive(BigInteger max)
         {
             BigInteger value;
             var bytes = max.ToByteArray();

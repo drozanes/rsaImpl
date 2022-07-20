@@ -12,7 +12,7 @@ namespace RsaImplementation
         static void Main(string[] args)
         {
             RSACore rsaCore = new RSACore();
-            BigInteger n = 13;
+            BigInteger n;
             int k = 5;
             //bool b = rsaCore.IsPrime(n, k);
             //Console.WriteLine("number " + n + " is " + b + ". Success=" + (b == true));
@@ -46,6 +46,7 @@ namespace RsaImplementation
                 Console.WriteLine("3 - Decrypt text");
                 Console.WriteLine("4 - Exit");
                 Console.WriteLine("5 - Check primarility");
+                Console.WriteLine("6 - Use exists key");
                 string input = Console.ReadLine();
                 
                 try
@@ -74,7 +75,7 @@ namespace RsaImplementation
                                 }
                                 Console.WriteLine("write chipertext to decrypt");
                                 c = BigInteger.Parse(Console.ReadLine());
-                                p = rsaCore.Encrypt(c, key.publicKey);
+                                p = rsaCore.Decrypt(c, key.privateKey);
                                 Console.WriteLine("Plaintext:" + p);
                                 break;
                             case 5:
@@ -83,6 +84,20 @@ namespace RsaImplementation
                                 Console.WriteLine("Enter k for algorithm");
                                 k = Convert.ToInt32(Console.ReadLine());
                                 Console.WriteLine("number " + num + " is " + rsaCore.IsPrime(num));
+                                break;
+                            case 6:
+                                Console.WriteLine("Enter number for e");
+                                long e = long.Parse(Console.ReadLine());
+                                Console.WriteLine("Enter number for d");
+                                BigInteger d = BigInteger.Parse(Console.ReadLine());
+                                Console.WriteLine("Enter number for n");
+                                n = BigInteger.Parse(Console.ReadLine());
+                                key = new RSAKey()
+                                {
+                                    privateKey = new RSAPrivateKey { d = d, n = n },
+                                    publicKey = new RSAPublicKey { e = e, n = n }
+                                };
+
                                 break;
                         }
                     }
